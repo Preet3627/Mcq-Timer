@@ -229,7 +229,9 @@ export async function createGoogleCalendarEvent(
       useDefault: false,
       overrides: [
         { method: 'popup', minutes: eventData.reminderMinutes || 15 },
-        { method: 'email', minutes: 30 },
+        ...(eventData.emailReminderMinutes
+          ? [{ method: 'email', minutes: eventData.emailReminderMinutes }]
+          : [{ method: 'email', minutes: 30 }]),
       ],
     },
     colorId: '6', // Tangerine / Amber color in Google Calendar

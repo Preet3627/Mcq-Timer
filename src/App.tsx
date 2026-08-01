@@ -14,6 +14,8 @@ import { HistoryDrawer } from './components/HistoryDrawer';
 import { AIPromptModal } from './components/AIPromptModal';
 import { CalendarModal } from './components/CalendarModal';
 import { OAuthSettingsModal } from './components/OAuthSettingsModal';
+import { SchoolSelectionModal } from './components/SchoolSelectionModal';
+import { AshadeepPlannerView } from './components/AshadeepPlannerView';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TestSettings, TestSessionResult, NavTab, UnfinishedSession } from './types';
 import { useAppStore } from './store/useAppStore';
@@ -35,6 +37,8 @@ export default function App() {
     themeMode,
     activeTab,
     setActiveTab,
+    showSchoolModal,
+    setShowSchoolModal,
   } = useAppStore();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -223,6 +227,8 @@ export default function App() {
                 <HistoryView onOpenCalendarModal={() => setIsCalendarOpen(true)} />
               )}
 
+              {activeTab === 'planner' && <AshadeepPlannerView />}
+
               {activeTab === 'insights' && <InsightsView />}
 
               {activeTab === 'settings' && <SettingsView />}
@@ -286,6 +292,12 @@ export default function App() {
         <OAuthSettingsModal
           isOpen={isOAuthOpen}
           onClose={() => setIsOAuthOpen(false)}
+        />
+
+        {/* School & Stream Selection Modal */}
+        <SchoolSelectionModal
+          isOpen={showSchoolModal}
+          onClose={() => setShowSchoolModal(false)}
         />
       </div>
     </ErrorBoundary>

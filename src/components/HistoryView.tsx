@@ -23,7 +23,7 @@ interface HistoryViewProps {
 }
 
 export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenCalendarModal }) => {
-  const { sessions, clearHistory, removeSession } = useAppStore();
+  const { sessions, clearSessions, deleteSession } = useAppStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('All');
@@ -317,7 +317,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenCalendarModal })
 
                         <button
                           type="button"
-                          onClick={() => removeSession(sess.id)}
+                          onClick={() => deleteSession(sess.id)}
                           className="p-2 text-slate-400 hover:text-rose-500 rounded-xl hover:bg-rose-500/10 transition-colors"
                           title="Delete Session Log"
                         >
@@ -338,7 +338,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ onOpenCalendarModal })
         <div className="flex justify-end pt-4">
           <button
             type="button"
-            onClick={clearHistory}
+            onClick={clearSessions}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-rose-500 hover:bg-rose-500/10 text-xs font-bold border border-rose-500/20 transition-colors"
           >
             <Trash2 className="w-4 h-4" />

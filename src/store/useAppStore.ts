@@ -9,9 +9,13 @@ import {
   ThemeMode,
   NavTab,
   UnfinishedSession,
+  SchoolProfile,
+  AshadeepExamEvent,
 } from '../types';
+import { getOriginalAshadeepTimetable } from '../data/ashadeepSchedule';
 import {
   authenticateGoogleUser,
+
   saveToGoogleDrive,
   loadFromGoogleDrive,
   createGoogleCalendarEvent,
@@ -59,6 +63,11 @@ interface AppState {
   themeMode: ThemeMode;
   activeTab: NavTab;
 
+  // School & Timetable State
+  schoolProfile: SchoolProfile | null;
+  customTimetable: AshadeepExamEvent[];
+  showSchoolModal: boolean;
+
   // Actions
   setTestSettings: (settings: TestSettings) => void;
   setLastSettings: (settings: TestSettings) => void;
@@ -66,6 +75,7 @@ interface AppState {
   clearUnfinishedSession: () => void;
   addSession: (result: TestSessionResult) => void;
   saveSession: (result: TestSessionResult) => void;
+  deleteSession: (id: string) => void;
   clearSessions: () => void;
   setUser: (user: GoogleUserProfile | null) => void;
   signOut: () => void;
@@ -75,6 +85,15 @@ interface AppState {
   setThemeMode: (mode: ThemeMode) => void;
   setActiveTab: (tab: NavTab) => void;
   initStoreListeners: () => void;
+
+  // School & Timetable Actions
+  setSchoolProfile: (profile: SchoolProfile | null) => void;
+  setShowSchoolModal: (show: boolean) => void;
+  restoreDefaultTimetable: () => void;
+  updateTimetableEvent: (event: AshadeepExamEvent) => void;
+  addCustomTimetableEvent: (event: AshadeepExamEvent) => void;
+  deleteTimetableEvent: (id: string) => void;
+  clearGoogleCalendarEvents: () => Promise<boolean>;
 
   // Google Operations
   loginWithGoogle: () => Promise<void>;
@@ -120,6 +139,15 @@ export const useAppStore = create<AppState>()(
       themeMode: 'system',
       activeTab: 'home',
 
+      schoolProfile: {
+        schoolType: 'guest',
+        schoolName: 'Guest Student',
+        stream: 'JEE',
+        isVerified: true,
+      },
+      customTimetable: getOriginalAshadeepTimetable(),
+      showSchoolModal: false,
+
       setTestSettings: (settings) => set({ testSettings: settings, lastSettings: settings }),
       setLastSettings: (settings) => set({ lastSettings: settings, testSettings: settings }),
 
@@ -137,6 +165,14 @@ export const useAppStore = create<AppState>()(
       saveSession: (result) => {
         const nextSessions = [result, ...get().sessions.filter((s) => s.id !== result.id)];
         set({ sessions: nextSessions, unfinishedSession: null });
+        if (get().user?.accessToken) {
+          get().syncToCloud().catch(console.warn);
+        }
+      },
+
+      deleteSession: (id) => {
+        const nextSessions = get().sessions.filter((s) => s.id !== id);
+        set({ sessions: nextSessions });
         if (get().user?.accessToken) {
           get().syncToCloud().catch(console.warn);
         }
@@ -311,6 +347,36 @@ export const useAppStore = create<AppState>()(
         return await createGoogleCalendarEvent(user.accessToken, eventData);
       },
 
+      setSchoolProfile: (profile) => set({ schoolProfile: profile }),
+      setShowSchoolModal: (show) => set({ showSchoolModal: show }),
+
+      restoreDefaultTimetable: () => set({ customTimetable: getOriginalAshadeepTimetable() }),
+
+      updateTimetableEvent: (updated) => {
+        const list = get().customTimetable.map((item) =>
+          item.id === updated.id ? { ...updated, isCustomized: true } : item
+        );
+        set({ customTimetable: list });
+      },
+
+      addCustomTimetableEvent: (event) => {
+        set({ customTimetable: [event, ...get().customTimetable] });
+      },
+
+      deleteTimetableEvent: (id) => {
+        set({ customTimetable: get().customTimetable.filter((item) => item.id !== id) });
+      },
+
+      clearGoogleCalendarEvents: async () => {
+        // Reset calendar event IDs on local timetable
+        const resetList = get().customTimetable.map((ev) => ({
+          ...ev,
+          calendarEventId: undefined,
+        }));
+        set({ customTimetable: resetList });
+        return true;
+      },
+
       toggleWakeLock: async (enable) => {
         if (enable) {
           const success = await requestWakeLock();
@@ -335,6 +401,8 @@ export const useAppStore = create<AppState>()(
         googleClientId: state.googleClientId,
         lastSyncedAt: state.lastSyncedAt,
         themeMode: state.themeMode,
+        schoolProfile: state.schoolProfile,
+        customTimetable: state.customTimetable,
       }),
     }
   )

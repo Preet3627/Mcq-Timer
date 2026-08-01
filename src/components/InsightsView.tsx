@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrendingUp, Target, Clock, AlertTriangle, Sparkles, CheckCircle, ArrowUpRight, Award, Zap } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { LocalAIInsightsCard } from './LocalAIInsightsCard';
 
 export const InsightsView: React.FC = () => {
   const { sessions } = useAppStore();
@@ -77,6 +78,9 @@ export const InsightsView: React.FC = () => {
         <h1 className="text-2xl sm:text-3xl font-black">Your MCQ Pace Highlights</h1>
         <p className="text-xs sm:text-sm text-cyan-100 font-medium">{paceTrendText}</p>
       </div>
+
+      {/* On-Device TensorFlow.js AI Neural Engine Analysis */}
+      <LocalAIInsightsCard />
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

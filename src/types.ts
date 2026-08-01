@@ -12,7 +12,7 @@ export type PracticeLevel = 'Level 1' | 'Level 2' | 'Level 3';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
-export type NavTab = 'home' | 'practice' | 'history' | 'insights' | 'settings';
+export type NavTab = 'home' | 'practice' | 'history' | 'insights' | 'planner' | 'settings';
 
 export interface QuestionAnswerKey {
   q: number;
@@ -86,6 +86,26 @@ export interface GoogleUserProfile {
   tokenExpiresAt?: number;
 }
 
+export interface SchoolProfile {
+  schoolType: 'ashadeep' | 'custom' | 'guest';
+  schoolName: string;
+  stream?: 'JEE' | 'NEET';
+  isVerified?: boolean;
+}
+
+export interface AshadeepExamEvent {
+  id: string;
+  code: string; // e.g. JMWT-01, JMKOTA-01, JMUT-01, AITS-01, FST-01
+  type: 'Weekly Test' | 'Kota Test' | 'Unit Test / RRT' | 'AITS' | 'Full Test' | 'Lecture';
+  subject: 'Maths' | 'Physics' | 'Chemistry' | 'Biology' | 'CPM' | 'Computer' | 'English' | string;
+  syllabus: string;
+  date: string; // YYYY-MM-DD
+  startTime?: string; // e.g. "09:00"
+  endTime?: string; // e.g. "12:00"
+  calendarEventId?: string; // ID if synced to Google Calendar
+  isCustomized?: boolean;
+}
+
 export type SyncState = 'idle' | 'syncing' | 'synced' | 'error';
 
 export interface CalendarEventRequest {
@@ -94,4 +114,5 @@ export interface CalendarEventRequest {
   startIso: string;
   endIso: string;
   reminderMinutes?: number;
+  emailReminderMinutes?: number;
 }

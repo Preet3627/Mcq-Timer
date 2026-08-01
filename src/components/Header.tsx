@@ -12,7 +12,9 @@ import {
   UserCheck,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  School,
+  BookOpen
 } from 'lucide-react';
 import { QTickLogo } from './QTickLogo';
 import { TestSettings, NavTab, ThemeMode } from '../types';
@@ -51,6 +53,8 @@ export const Header: React.FC<HeaderProps> = ({
     setThemeMode,
     pwaInstallPrompt,
     isPwaInstalled,
+    schoolProfile,
+    setShowSchoolModal,
   } = useAppStore();
 
   const handleInstallPWA = () => {
@@ -62,6 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   const desktopNavItems: { id: NavTab; label: string }[] = [
     { id: 'home', label: 'Home' },
     { id: 'practice', label: 'Practice' },
+    { id: 'planner', label: 'Syllabus & Planner' },
     { id: 'history', label: 'History' },
     { id: 'insights', label: 'Insights' },
     { id: 'settings', label: 'Settings' },
@@ -140,6 +145,22 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">Install App</span>
             </button>
           )}
+
+          {/* School Selector Button */}
+          <button
+            onClick={() => setShowSchoolModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 transition-all"
+            title="School & Stream Selection"
+          >
+            <School className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="hidden sm:inline">
+              {schoolProfile?.schoolType === 'ashadeep'
+                ? 'Ashadeep IIT'
+                : schoolProfile?.schoolType === 'custom'
+                ? schoolProfile.schoolName
+                : 'School'}
+            </span>
+          </button>
 
           {/* Google Calendar Reminder Button */}
           <button

@@ -1,9 +1,10 @@
-import React from 'react';
-import { Play, Clock, Target, Trophy, ArrowRight, Zap, RefreshCw, Sparkles, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Play, Clock, Target, Trophy, ArrowRight, Zap, RefreshCw, Sparkles, CheckCircle2, RotateCcw, Cpu } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../store/useAppStore';
 import { QTickLogo } from './QTickLogo';
 import { NavTab, TestSessionResult } from '../types';
+import { runLocalTfInference, TFJSModelPrediction } from '../utils/tfjsPredictor';
 
 interface HomeViewProps {
   onStartPractice: () => void;
@@ -19,6 +20,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onViewSessionDetail,
 }) => {
   const { sessions, unfinishedSession, user, themeMode } = useAppStore();
+
+  const [tfPrediction, setTfPrediction] = useState<TFJSModelPrediction | null>(null);
+
+  useEffect(() => {
+    runLocalTfInference(sessions).then(setTfPrediction);
+  }, [sessions]);
 
   // Compute stats
   const totalSessions = sessions.length;
@@ -89,9 +96,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 space-y-4 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-blue-100 border border-white/20">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-            <span>Welcome back{user ? `, ${user.name.split(' ')[0]}` : ''}!</span>
+          <div className="inline-flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-blue-100 border border-white/20">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+              <span>Welcome back{user ? `, ${user.name.split(' ')[0]}` : ''}!</span>
+            </div>
+
+            {tfPrediction && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/30 backdrop-blur-md text-xs font-bold text-purple-200 border border-purple-400/30">
+                <Cpu className="w-3.5 h-3.5 text-purple-300" />
+                <span>TF.js Target Pace: {tfPrediction.recommendedTargetTimeSec}s/Q</span>
+              </div>
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">

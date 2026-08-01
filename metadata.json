@@ -1,6 +1,6 @@
 {
   "name": "QTickX",
-  "description": "Simple, friendly MCQ practice timer and speed analytics for JEE and NEET students. Track time per question, pace warnings, accuracy, and practice history.",
+  "description": "Simple, friendly MCQ practice timer and speed analytics for JEE and NEET students with Ashadeep IIT/NEET timetable planner, custom school options, and Google Calendar schedule integration.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
