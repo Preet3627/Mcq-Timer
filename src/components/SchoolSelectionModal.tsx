@@ -30,7 +30,7 @@ export const SchoolSelectionModal: React.FC<SchoolSelectionModalProps> = ({ isOp
 
     if (selectedType === 'ashadeep') {
       if (passwordInput.trim() !== ASHADEEP_PASSWORD) {
-        setPasswordError('Incorrect password for Ashadeep IIT. (Password is Ashadeep@2026)');
+        setPasswordError(`Incorrect password for Ashadeep IIT. (Password is ${ASHADEEP_PASSWORD})`);
         return;
       }
 
@@ -190,7 +190,7 @@ export const SchoolSelectionModal: React.FC<SchoolSelectionModalProps> = ({ isOp
                     setPasswordInput(e.target.value);
                     setPasswordError('');
                   }}
-                  placeholder="Enter Ashadeep@2026"
+                  placeholder={`Enter password (e.g. ${ASHADEEP_PASSWORD})`}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 pr-20"
                 />
                 <button

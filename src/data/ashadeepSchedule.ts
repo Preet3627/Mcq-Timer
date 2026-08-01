@@ -9,7 +9,7 @@ export interface ChapterProgress {
   lecJee: number;
 }
 
-export const ASHADEEP_PASSWORD = 'Ashadeep@2026';
+export const ASHADEEP_PASSWORD = import.meta.env.VITE_ASHADEEP_PASSWORD || 'Ashadeep@2026';
 
 export const ASHADEEP_HEADER = {
   title: 'ASHADEEP JEE | NEET | FOUNDATION LEGACY OF EXCELLENCE',

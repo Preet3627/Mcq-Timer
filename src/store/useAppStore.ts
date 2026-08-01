@@ -11,8 +11,12 @@ import {
   UnfinishedSession,
   SchoolProfile,
   AshadeepExamEvent,
+  FlashcardItem,
+  HistorySnapshot,
+  DeepLinkPayload,
 } from '../types';
 import { getOriginalAshadeepTimetable } from '../data/ashadeepSchedule';
+import { INITIAL_AUTO_FLASHCARDS } from '../data/autoFlashcards';
 import {
   authenticateGoogleUser,
 
@@ -68,6 +72,14 @@ interface AppState {
   customTimetable: AshadeepExamEvent[];
   showSchoolModal: boolean;
 
+  // Flashcards, Versioning, and Deep Link State
+  flashcards: FlashcardItem[];
+  historySnapshots: HistorySnapshot[];
+  pendingDeepLink: DeepLinkPayload | null;
+  showDeepLinkModal: boolean;
+  showVersionModal: boolean;
+  showTeacherReportModal: boolean;
+
   // Actions
   setTestSettings: (settings: TestSettings) => void;
   setLastSettings: (settings: TestSettings) => void;
@@ -85,6 +97,24 @@ interface AppState {
   setThemeMode: (mode: ThemeMode) => void;
   setActiveTab: (tab: NavTab) => void;
   initStoreListeners: () => void;
+
+  // Flashcard Actions
+  addFlashcard: (card: FlashcardItem) => void;
+  toggleFlashcardLearned: (id: string) => void;
+  deleteFlashcard: (id: string) => void;
+  setFlashcards: (cards: FlashcardItem[]) => void;
+
+  // Versioning & Snapshot Actions
+  createHistorySnapshot: (reason: HistorySnapshot['reason'], label?: string) => string;
+  restoreHistorySnapshot: (snapshotId: string) => boolean;
+  deleteHistorySnapshot: (snapshotId: string) => void;
+
+  // Deep Link Actions
+  setPendingDeepLink: (payload: DeepLinkPayload | null) => void;
+  setShowDeepLinkModal: (show: boolean) => void;
+  setShowVersionModal: (show: boolean) => void;
+  setShowTeacherReportModal: (show: boolean) => void;
+  applyDeepLinkPayload: (payload: DeepLinkPayload) => void;
 
   // School & Timetable Actions
   setSchoolProfile: (profile: SchoolProfile | null) => void;
@@ -147,6 +177,13 @@ export const useAppStore = create<AppState>()(
       },
       customTimetable: getOriginalAshadeepTimetable(),
       showSchoolModal: false,
+
+      flashcards: INITIAL_AUTO_FLASHCARDS,
+      historySnapshots: [],
+      pendingDeepLink: null,
+      showDeepLinkModal: false,
+      showVersionModal: false,
+      showTeacherReportModal: false,
 
       setTestSettings: (settings) => set({ testSettings: settings, lastSettings: settings }),
       setLastSettings: (settings) => set({ lastSettings: settings, testSettings: settings }),
@@ -388,6 +425,113 @@ export const useAppStore = create<AppState>()(
           return true;
         }
       },
+
+      // Flashcards Actions
+      addFlashcard: (card) => {
+        const next = [card, ...get().flashcards.filter((f) => f.id !== card.id)];
+        set({ flashcards: next });
+      },
+
+      toggleFlashcardLearned: (id) => {
+        const next = get().flashcards.map((f) =>
+          f.id === id ? { ...f, isLearned: !f.isLearned } : f
+        );
+        set({ flashcards: next });
+      },
+
+      deleteFlashcard: (id) => {
+        const next = get().flashcards.filter((f) => f.id !== id);
+        set({ flashcards: next });
+      },
+
+      setFlashcards: (cards) => set({ flashcards: cards }),
+
+      // History Versioning & Snapshot Actions
+      createHistorySnapshot: (reason, label) => {
+        const snapshotId = `snap-${Date.now()}`;
+        const newSnapshot: HistorySnapshot = {
+          id: snapshotId,
+          timestamp: new Date().toISOString(),
+          label: label || `Snapshot ${new Date().toLocaleTimeString()}`,
+          reason,
+          sessionCount: get().sessions.length,
+          timetableCount: get().customTimetable.length,
+          flashcardCount: get().flashcards.length,
+          data: {
+            sessions: JSON.parse(JSON.stringify(get().sessions)),
+            customTimetable: JSON.parse(JSON.stringify(get().customTimetable)),
+            flashcards: JSON.parse(JSON.stringify(get().flashcards)),
+            testSettings: JSON.parse(JSON.stringify(get().testSettings)),
+            schoolProfile: get().schoolProfile ? JSON.parse(JSON.stringify(get().schoolProfile)) : null,
+          },
+        };
+
+        const existingSnapshots = get().historySnapshots || [];
+        const updatedSnapshots = [newSnapshot, ...existingSnapshots].slice(0, 10); // Keep 10 latest
+        set({ historySnapshots: updatedSnapshots });
+        return snapshotId;
+      },
+
+      restoreHistorySnapshot: (snapshotId) => {
+        const target = get().historySnapshots.find((s) => s.id === snapshotId);
+        if (!target) return false;
+
+        // Take automatic safety backup before restoring past version
+        get().createHistorySnapshot('auto_snapshot', `Pre-restore Backup before loading ${target.label}`);
+
+        set({
+          sessions: target.data.sessions || [],
+          customTimetable: target.data.customTimetable || getOriginalAshadeepTimetable(),
+          flashcards: target.data.flashcards || INITIAL_AUTO_FLASHCARDS,
+          testSettings: target.data.testSettings || DEFAULT_SETTINGS,
+          schoolProfile: target.data.schoolProfile || get().schoolProfile,
+        });
+        return true;
+      },
+
+      deleteHistorySnapshot: (snapshotId) => {
+        set({
+          historySnapshots: get().historySnapshots.filter((s) => s.id !== snapshotId),
+        });
+      },
+
+      // Deep Link Actions
+      setPendingDeepLink: (payload) => set({ pendingDeepLink: payload }),
+      setShowDeepLinkModal: (show) => set({ showDeepLinkModal: show }),
+      setShowVersionModal: (show) => set({ showVersionModal: show }),
+      setShowTeacherReportModal: (show) => set({ showTeacherReportModal: show }),
+
+      applyDeepLinkPayload: (payload) => {
+        // Create safety backup
+        get().createHistorySnapshot('pre_import_backup', `Pre-import backup (${payload.title || payload.type})`);
+
+        if (payload.type === 'practice' && payload.practiceSettings) {
+          const mergedSettings: TestSettings = {
+            ...get().testSettings,
+            ...payload.practiceSettings,
+          };
+          set({ testSettings: mergedSettings, activeTab: 'practice' });
+        }
+
+        if (payload.scheduleEvents && payload.scheduleEvents.length > 0) {
+          const currentEvents = get().customTimetable;
+          const mergedEvents = [...payload.scheduleEvents, ...currentEvents];
+          // deduplicate by id/code
+          const uniqueEventsMap = new Map<string, AshadeepExamEvent>();
+          mergedEvents.forEach((ev) => uniqueEventsMap.set(ev.id || ev.code, ev));
+          set({ customTimetable: Array.from(uniqueEventsMap.values()) });
+        }
+
+        if (payload.flashcards && payload.flashcards.length > 0) {
+          const currentCards = get().flashcards;
+          const mergedCards = [...payload.flashcards, ...currentCards];
+          const uniqueCardsMap = new Map<string, FlashcardItem>();
+          mergedCards.forEach((card) => uniqueCardsMap.set(card.id, card));
+          set({ flashcards: Array.from(uniqueCardsMap.values()) });
+        }
+
+        set({ pendingDeepLink: null, showDeepLinkModal: false });
+      },
     }),
     {
       name: 'qtick_store_v1',
@@ -403,6 +547,8 @@ export const useAppStore = create<AppState>()(
         themeMode: state.themeMode,
         schoolProfile: state.schoolProfile,
         customTimetable: state.customTimetable,
+        flashcards: state.flashcards,
+        historySnapshots: state.historySnapshots,
       }),
     }
   )

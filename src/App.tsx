@@ -16,10 +16,16 @@ import { CalendarModal } from './components/CalendarModal';
 import { OAuthSettingsModal } from './components/OAuthSettingsModal';
 import { SchoolSelectionModal } from './components/SchoolSelectionModal';
 import { AshadeepPlannerView } from './components/AshadeepPlannerView';
+import { FlashcardsView } from './components/FlashcardsView';
+import { PromptGeneratorModal } from './components/PromptGeneratorModal';
+import { DeepLinkApprovalModal } from './components/DeepLinkApprovalModal';
+import { VersionHistoryModal } from './components/VersionHistoryModal';
+import { TeacherReportModal } from './components/TeacherReportModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TestSettings, TestSessionResult, NavTab, UnfinishedSession } from './types';
 import { useAppStore } from './store/useAppStore';
 import { parseAnswerKeyInput } from './utils/answerKeyParser';
+import { parseDeepLinkFromUrl } from './utils/promptGenerator';
 import { startAmbientSound, stopAmbientSound, updateAmbientVolume } from './utils/audio';
 
 export default function App() {
@@ -39,6 +45,14 @@ export default function App() {
     setActiveTab,
     showSchoolModal,
     setShowSchoolModal,
+    pendingDeepLink,
+    showDeepLinkModal,
+    showVersionModal,
+    showTeacherReportModal,
+    setPendingDeepLink,
+    setShowDeepLinkModal,
+    setShowVersionModal,
+    setShowTeacherReportModal,
   } = useAppStore();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -50,13 +64,23 @@ export default function App() {
 
   // Modals
   const [isAIPromptOpen, setIsAIPromptOpen] = useState(false);
+  const [isPromptGenOpen, setIsPromptGenOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isOAuthOpen, setIsOAuthOpen] = useState(false);
   const [selectedHistoryResult, setSelectedHistoryResult] = useState<TestSessionResult | null>(null);
 
-  // Initialize store listeners & PWA install prompts
+  // Initialize store listeners, PWA, and check URL for deep links
   useEffect(() => {
     initStoreListeners();
+
+    // Check for Deep Link URL query parameters
+    if (window.location.search) {
+      const parsed = parseDeepLinkFromUrl(window.location.search);
+      if (parsed) {
+        setPendingDeepLink(parsed);
+        setShowDeepLinkModal(true);
+      }
+    }
 
     // Register service worker if supported
     if ('serviceWorker' in navigator) {
@@ -229,6 +253,8 @@ export default function App() {
 
               {activeTab === 'planner' && <AshadeepPlannerView />}
 
+              {activeTab === 'flashcards' && <FlashcardsView />}
+
               {activeTab === 'insights' && <InsightsView />}
 
               {activeTab === 'settings' && <SettingsView />}
@@ -264,7 +290,7 @@ export default function App() {
           isTimerActive={view === 'timer'}
         />
 
-        {/* AI Prompt Helper Modal */}
+        {/* AI Answer Key Convertor Modal */}
         <AIPromptModal
           isOpen={isAIPromptOpen}
           onClose={() => setIsAIPromptOpen(false)}
@@ -279,6 +305,30 @@ export default function App() {
               setLastSettings({ ...lastSettings, answerKey: parsed });
             }
           }}
+        />
+
+        {/* Dynamic AI Schedule & Analytics Prompt Generator Modal */}
+        <PromptGeneratorModal
+          isOpen={isPromptGenOpen}
+          onClose={() => setIsPromptGenOpen(false)}
+        />
+
+        {/* Deep Link Import Approval & Preview Modal */}
+        <DeepLinkApprovalModal
+          isOpen={showDeepLinkModal}
+          onClose={() => setShowDeepLinkModal(false)}
+        />
+
+        {/* History Versioning & Rollback Snapshot Recovery Modal */}
+        <VersionHistoryModal
+          isOpen={showVersionModal}
+          onClose={() => setShowVersionModal(false)}
+        />
+
+        {/* Teacher Share Report Modal */}
+        <TeacherReportModal
+          isOpen={showTeacherReportModal}
+          onClose={() => setShowTeacherReportModal(false)}
         />
 
         {/* Google Calendar Schedule Modal */}

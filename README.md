@@ -1,76 +1,56 @@
-# QTickX ⚡
+# QTickX — Smart MCQ Practice Timer & Speed Analytics for JEE & NEET
 
-**QTickX** is a high-performance, friendly MCQ practice timer and speed analytics application engineered specifically for **JEE** and **NEET** aspirants. It helps students track time spent per question, receive gentle or urgent pace warnings, analyze speed vs. accuracy performance, and backup practice sessions effortlessly with Google Drive integration.
-
----
-
-## 🌟 Key Features
-
-- **⏱️ Question-Level Precision Timing**: Track exact seconds spent on each question with auto-increment timer and question matrix navigation.
-- **📚 Exercise & Chapter Tagging**: Organize practice sets by subject, level, practice mode, or specific exercise numbers (e.g., `7.1`, `3.4`, `Ex 12.2`).
-- **🔔 Intelligent Pace Reminders**: Customizable gentle caution (e.g., 3 minutes) and urgent alerts (e.g., 10 minutes) when questions take too long.
-- **📊 Comprehensive Speed & Accuracy Scorecard**: Automatic JEE (+4 / -1) & NEET marking system, accuracy percentage calculation, and pace metrics.
-- **🎵 Ambient Study Audio**: Built-in study pad, brown noise, soft rain, and clock ticking loops to boost deep focus.
-- **☁️ Google Drive & Calendar Integration**: Backup practice history to your personal Google Account and schedule revision reminders directly in Google Calendar.
-- **📱 PWA & Offline Support**: Installable Progressive Web App with local state persistence and dark mode interface.
+**QTickX** is a high-precision, distraction-free MCQ practice timer, pace analytics engine, and exam planner built specifically for **JEE Main, JEE Advanced, and NEET** aspirants.
 
 ---
 
-## 🛠️ Quick Start
+## 🌟 Key Features & Best Use Cases
 
-### 1. Installation
+### 1. 🤖 Dynamic 1-Month Schedule & AI Context Exporter
+- **1-Click Dynamic AI Prompt Generator**: Generates a comprehensive prompt payload containing your surrounding 1-month Ashadeep/custom exam schedule, overall & subject-wise MCQ accuracy, question pace metrics, and past weak topic logs.
+- **External LLM Mentorship**: Paste the generated prompt into **Google Gemini, ChatGPT, or Claude**. It guides the AI to output targeted study advice, formula flashcards, and QTickX deep-links!
+
+### 2. 🔗 Web-Based Deep-Linking & Verification Approval
+- **Interactive Deep Links**: Supports URLs like `?addPractice=1&subject=Physics...` or `?importSchedule=...` or `?importFlashcards=...`.
+- **Approval & Diff Preview Modal**: Opening a QTickX deep link displays a safety verification window previewing the payload (tests, exam dates, or flashcards) with a warning before applying changes.
+
+### 3. 🕒 Version History & Snapshot Recovery
+- **Automatic History Snapshots**: Automatically creates a safety backup before applying deep link imports or restoring states.
+- **1-Click Rollback**: View past app history versions and instantly recover to any snapshot if you want to undo changes.
+
+### 4. ⚡ Formula Vault & Automatic AI Flashcards
+- **Interactive Flashcard Deck**: Practice essential Physics, Chemistry, Mathematics, and Biology formula memory cards mapped to JEE/NEET topics.
+- **Auto-AI Formulas Generator**: Analyzes your upcoming 1-month exam syllabus and generates fresh formula memory cards automatically.
+- **Motivational Quote Shuffler**: Keeps aspirants inspired with auto-shuffling motivational quotes from IIT and AIIMS toppers.
+
+### 5. 📊 1-Link Teacher & Parent Share Report
+- **Student Progress Card**: Generates a shareable URL containing your practice stats, solved question count, accuracy rates, and upcoming exam dates.
+- **Teacher Verification**: Mentors can view verified student logs without requiring account logins.
+
+### 6. 📅 Ashadeep IIT & NEET Timetable Planner (2026-27)
+- **Official Exam Sync**: Complete schedule for JMWT (JEE Main Weekly Test), JMKOTA, AITS, JMUT, and NEET unit tests.
+- **Google Calendar Integration**: 1-click sync of upcoming exam dates and practice reminders straight to Google Calendar.
+
+### 7. 🧠 TensorFlow.js On-Device Pacing AI Engine
+- **Local Machine Learning**: Evaluates student solve speeds and caution rates in real-time on-device without sending data to servers.
+- **Dynamic Pace Adjuster**: Recommends target times per question (e.g. 180s for Physics vs 120s for Chemistry).
+
+---
+
+## 🚀 Getting Started
 
 ```bash
-# Clone the repository
-git clone https://github.com/Latestinssan/qtickx.git
-cd qtickx
-
 # Install dependencies
 npm install
-```
 
-### 2. Environment Setup
-
-Create a `.env` file based on `.env.example`:
-
-```env
-VITE_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-```
-
-> **Note on Client Secrets**: Client-side web applications use standard OAuth Client IDs with Google Identity Services (GIS). Never expose Client Secrets in frontend web bundles.
-
-### 3. Development Server
-
-```bash
+# Start local development server
 npm run dev
-```
 
-Open `http://localhost:3000` in your browser.
+# Build for production
+npm run build
+```
 
 ---
 
-## 👨‍💻 Developer & Attribution
-
-- **Lead Developer**: Latestinssan
-
----
-
-## 📄 License
-
-This project is licensed under the **Apache License 2.0**. See the [LICENSE](./LICENSE) file for details.
-
-```text
-Copyright © 2026 Aartiq™. All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+## 🔒 Privacy & Local Storage
+All student logs, custom timetable events, and formula flashcards are stored securely in client-side storage (`localStorage`) with optional Google Drive backup.

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, PlayCircle, History, TrendingUp, Settings, Calendar } from 'lucide-react';
+import { Home, PlayCircle, History, TrendingUp, Settings, Calendar, BookOpen } from 'lucide-react';
 import { NavTab } from '../types';
 import { vibrateDevice } from '../utils/device';
 
@@ -21,6 +21,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     { id: 'home', label: 'Home', icon: <Home className="w-5 h-5" /> },
     { id: 'practice', label: 'Practice', icon: <PlayCircle className="w-5 h-5" /> },
     { id: 'planner', label: 'Planner', icon: <Calendar className="w-5 h-5" /> },
+    { id: 'flashcards', label: 'Vault', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'history', label: 'History', icon: <History className="w-5 h-5" /> },
     { id: 'insights', label: 'Insights', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },

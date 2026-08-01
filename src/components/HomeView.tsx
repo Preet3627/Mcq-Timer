@@ -207,6 +207,57 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
+      {/* Aspirant Toolkit & AI Integrations */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+        <div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-500" />
+            <span>AI Mentor & Teacher Toolkit</span>
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Export 1-month AI prompts, share teacher reports, roll back versions, and revise formula cards
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().setShowDeepLinkModal(true)}
+            className="p-3.5 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/30 text-left space-y-1.5 hover:border-indigo-500 transition-all"
+          >
+            <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300">🤖 AI Schedule Prompt</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">Export 1-month context to Gemini/ChatGPT</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().setShowTeacherReportModal(true)}
+            className="p-3.5 rounded-2xl border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 text-left space-y-1.5 hover:border-emerald-500 transition-all"
+          >
+            <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300">📊 Teacher Share Link</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">Send 1-link analytics card to mentor</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigateTab('flashcards')}
+            className="p-3.5 rounded-2xl border border-purple-200/80 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/30 text-left space-y-1.5 hover:border-purple-500 transition-all"
+          >
+            <div className="text-xs font-bold text-purple-700 dark:text-purple-300">⚡ Formula Vault</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">Master JEE/NEET formula memory cards</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => useAppStore.getState().setShowVersionModal(true)}
+            className="p-3.5 rounded-2xl border border-cyan-200/80 dark:border-cyan-900/60 bg-cyan-50/50 dark:bg-cyan-950/30 text-left space-y-1.5 hover:border-cyan-500 transition-all"
+          >
+            <div className="text-xs font-bold text-cyan-700 dark:text-cyan-300">🕒 History Version Recovery</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">Restore previous app history snapshots</div>
+          </button>
+        </div>
+      </div>
+
       {/* Quick Start Subjects Card */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
