@@ -6,6 +6,7 @@ import {
   DeepLinkPayload,
   StudentShareReport,
   TestSettings,
+  ExamScoreRecord,
 } from '../types';
 
 /**
@@ -43,7 +44,8 @@ export function generateDynamicStudentPrompt(
   sessions: TestSessionResult[],
   customTimetable: AshadeepExamEvent[],
   flashcards: FlashcardItem[],
-  schoolProfile: SchoolProfile | null
+  schoolProfile: SchoolProfile | null,
+  examScores: ExamScoreRecord[] = []
 ): string {
   const currentDateIso = new Date().toISOString().split('T')[0];
   const today = new Date();
@@ -110,19 +112,31 @@ export function generateDynamicStudentPrompt(
     return `- [${ev.date}] **${ev.code}** (${ev.type} - ${ev.subject}): ${ev.syllabus}`;
   });
 
+  // 5. Exam Scores Log
+  const examScoreLines = examScores.map((scoreRecord) => {
+    return `- [${scoreRecord.date}] **${scoreRecord.examCode} (${scoreRecord.examName})** - ${scoreRecord.subject}: Score ${scoreRecord.score}/${scoreRecord.maxScore} (${Math.round((scoreRecord.score / (scoreRecord.maxScore || 1)) * 100)}%) ${scoreRecord.notes ? `[Note: ${scoreRecord.notes}]` : ''}`;
+  });
+
+  // 6. Current Flashcard Decks Count
+  const flashcardSummary = `Existing Flashcards: ${flashcards.length} cards active across Physics, Chemistry, Mathematics & Biology.`;
+
   // App Base Domain URL for Deep Link Guidance
   const appBaseUrl = window.location.origin + window.location.pathname;
 
   const promptText = `
 SYSTEM ROLE & CONTEXT FOR AI ASSISTANT:
 You are an elite competitive examination mentor specializing in JEE Main, JEE Advanced, and NEET entrance exams.
-Below is the live student context, 1-month surrounding test schedule, and recent practice analytics exported from the QTickX MCQ Practice System.
+Below is the live student context as of TODAY (${currentDateIso}), 1-month surrounding test schedule, exam score log, and practice analytics exported from the QTickX MCQ Practice System.
 
 ---
-### 🎓 STUDENT PROFILE
+### 🎓 STUDENT PROFILE & CURRENT DATE
+- **Today's Date**: ${currentDateIso}
 - **School / Institute**: ${schoolProfile?.schoolName || 'Ashadeep IIT & NEET Group'}
 - **Target Exam Stream**: ${schoolProfile?.stream || 'JEE'}
-- **Export Date**: ${currentDateIso}
+
+---
+### 📈 EXAM MARKS & TEST SCORE LOG
+${examScoreLines.length > 0 ? examScoreLines.join('\n') : '- No historical exam scores logged yet. Please ask the user to provide their latest JMWT/Kota test marks so you can give deeper diagnostic feedback!'}
 
 ---
 ### 📅 SURROUNDING 1-MONTH TEST & LECTURE SCHEDULE
@@ -140,22 +154,57 @@ ${scheduleLines.length > 0 ? scheduleLines.join('\n') : '- No scheduled tests in
 ${subjectSummaryLines || '- No subject breakdown data yet.'}
 
 ---
+### ⚡ FLASHCARDS & REVISION DECK
+${flashcardSummary}
+
+---
 ### 📝 RECENT PRACTICE TEST LOGS
 ${recentSessionsList.length > 0 ? recentSessionsList.join('\n') : '- No practice test history recorded yet.'}
 
 ---
 ### 🤖 MENTORSHIP INSTRUCTIONS FOR THE AI ASSISTANT:
-1. **Analyze Performance Gaps**: Identify the student's weakest subject and speed bottlenecks based on the analytics above.
-2. **Actionable Study Plan**: Formulate a high-impact, day-by-day revision schedule tailored to their upcoming exam dates listed in the schedule above.
-3. **High-Yield Flashcards & Formulas**: Suggest 3-5 critical formulas or memory tips for their immediate upcoming syllabus topics.
-4. **Generate QTickX Interactive Deep-Links**:
-   When proposing a practice test or revision exercise, format a QTickX Deep-Link so the student can click it directly to launch the timer in QTickX!
-   
-   *Practice Deep-Link Format*:
-   \`${appBaseUrl}?addPractice=1&subject=<Subject>&mode=Self+Practice&totalQuestions=15&targetTimePerQuestion=180\`
-   
-   *Flashcard Import Deep-Link Format*:
-   \`${appBaseUrl}?importFlashcards=<Base64EncodedPayload>\`
+1. **Current Date & Score Analysis**: Evaluate the student's progress as of ${currentDateIso}. Ask about their exam marks if missing, or analyze their latest scores.
+2. **Actionable Revision Roadmap**: Formulate a high-impact, day-by-day revision schedule tailored to their upcoming exam dates.
+3. **High-Yield Formula Flashcards**: Suggest 3-5 critical formulas or memory tricks tailored to their upcoming syllabus.
+4. **ALL-IN-ONE QTickX JSON PAYLOAD OUTPUT**:
+   At the end of your response, ALWAYS include a valid, formatted JSON block enclosed inside \`\`\`json ... \`\`\` so the student can copy and click "Import AI JSON Payload" in QTickX to instantly load your study recommendations, new formula flashcards, motivational quotes, and practice test presets into their app!
+
+   *Required JSON Schema format*:
+   \`\`\`json
+   {
+     "version": "1.0",
+     "title": "AI Master Study Plan & Revision Deck (${currentDateIso})",
+     "description": "Custom roadmap generated for upcoming exams",
+     "flashcards": [
+       {
+         "id": "fc-ai-1",
+         "subject": "Physics",
+         "topic": "Rotational Motion",
+         "front": "Moment of Inertia of Solid Sphere",
+         "back": "I = (2/5) * M * R^2",
+         "type": "formula"
+       }
+     ],
+     "motivationalQuotes": [
+       {
+         "id": "q-ai-1",
+         "text": "Consistency beats talent when talent doesn't stay consistent.",
+         "author": "JEE Exam Mentor"
+       }
+     ],
+     "presetPracticeSession": {
+       "subject": "Physics",
+       "mode": "Self Practice",
+       "totalQuestions": 15,
+       "targetTimePerQuestion": 180,
+       "answerKey": [{"q": 1, "ans": "A"}, {"q": 2, "ans": "C"}]
+     }
+   }
+   \`\`\`
+
+5. **Generate Interactive QTickX Deep-Links**:
+   Provide direct clickable QTickX URLs in your explanation:
+   *Practice Deep-Link*: \`${appBaseUrl}?addPractice=1&subject=Physics&mode=Self+Practice&totalQuestions=15&targetTimePerQuestion=180\`
 
 Please provide a structured, encouraging, and highly specific mentorship response.
 `.trim();

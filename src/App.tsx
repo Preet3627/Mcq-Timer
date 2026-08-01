@@ -18,6 +18,7 @@ import { SchoolSelectionModal } from './components/SchoolSelectionModal';
 import { AshadeepPlannerView } from './components/AshadeepPlannerView';
 import { FlashcardsView } from './components/FlashcardsView';
 import { PromptGeneratorModal } from './components/PromptGeneratorModal';
+import { AIPlannerModal } from './components/AIPlannerModal';
 import { DeepLinkApprovalModal } from './components/DeepLinkApprovalModal';
 import { VersionHistoryModal } from './components/VersionHistoryModal';
 import { TeacherReportModal } from './components/TeacherReportModal';
@@ -49,10 +50,12 @@ export default function App() {
     showDeepLinkModal,
     showVersionModal,
     showTeacherReportModal,
+    showAIPlannerModal,
     setPendingDeepLink,
     setShowDeepLinkModal,
     setShowVersionModal,
     setShowTeacherReportModal,
+    setShowAIPlannerModal,
   } = useAppStore();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -348,6 +351,12 @@ export default function App() {
         <SchoolSelectionModal
           isOpen={showSchoolModal}
           onClose={() => setShowSchoolModal(false)}
+        />
+
+        {/* AI Master Planner & All-In-One JSON Studio Modal */}
+        <AIPlannerModal
+          isOpen={showAIPlannerModal}
+          onClose={() => setShowAIPlannerModal(false)}
         />
       </div>
     </ErrorBoundary>

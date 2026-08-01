@@ -14,7 +14,8 @@ import {
   Moon,
   Monitor,
   School,
-  BookOpen
+  BookOpen,
+  BrainCircuit,
 } from 'lucide-react';
 import { QTickLogo } from './QTickLogo';
 import { TestSettings, NavTab, ThemeMode } from '../types';
@@ -55,6 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
     isPwaInstalled,
     schoolProfile,
     setShowSchoolModal,
+    setShowAIPlannerModal,
   } = useAppStore();
 
   const handleInstallPWA = () => {
@@ -146,6 +148,16 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">Install App</span>
             </button>
           )}
+
+          {/* AI Planner Button */}
+          <button
+            onClick={() => setShowAIPlannerModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-black rounded-xl shadow-sm transition-all"
+            title="Open AI Master Planner & JSON Importer Studio"
+          >
+            <BrainCircuit className="w-3.5 h-3.5 text-yellow-300" />
+            <span className="hidden sm:inline">AI Planner</span>
+          </button>
 
           {/* School Selector Button */}
           <button

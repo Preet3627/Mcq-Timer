@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Play, Clock, Target, Trophy, ArrowRight, Zap, RefreshCw, Sparkles, CheckCircle2, RotateCcw, Cpu } from 'lucide-react';
+import { Play, Clock, Target, Trophy, ArrowRight, Zap, RefreshCw, Sparkles, CheckCircle2, RotateCcw, Cpu, BrainCircuit, Upload } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../store/useAppStore';
 import { QTickLogo } from './QTickLogo';
@@ -19,7 +19,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onNavigateTab,
   onViewSessionDetail,
 }) => {
-  const { sessions, unfinishedSession, user, themeMode } = useAppStore();
+  const { sessions, unfinishedSession, user, themeMode, setShowAIPlannerModal } = useAppStore();
 
   const [tfPrediction, setTfPrediction] = useState<TFJSModelPrediction | null>(null);
 
@@ -125,6 +125,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Start Practice Now</span>
+            </button>
+
+            <button
+              onClick={() => setShowAIPlannerModal(true)}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-black/10 transition-all flex items-center gap-2"
+            >
+              <BrainCircuit className="w-4 h-4 text-slate-950" />
+              <span>AI Planner & JSON Studio</span>
             </button>
 
             {unfinishedSession && (

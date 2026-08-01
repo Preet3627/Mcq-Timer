@@ -158,6 +158,37 @@ export interface DeepLinkPayload {
   studentReport?: StudentShareReport;
 }
 
+export interface ExamScoreRecord {
+  id: string;
+  examCode: string; // e.g. JMWT-01 or Kota Test 02
+  examName: string;
+  subject: string;
+  score: number;
+  maxScore: number;
+  date: string;
+  notes?: string;
+}
+
+export interface MotivationalQuoteItem {
+  id: string;
+  text: string;
+  author: string;
+  category?: 'JEE' | 'NEET' | 'General';
+}
+
+export interface AIPlannerImportPayload {
+  version?: string;
+  createdDate?: string;
+  title?: string;
+  description?: string;
+  schoolProfile?: Partial<SchoolProfile>;
+  customTimetable?: AshadeepExamEvent[];
+  flashcards?: FlashcardItem[];
+  examScores?: ExamScoreRecord[];
+  motivationalQuotes?: MotivationalQuoteItem[];
+  presetPracticeSession?: Partial<TestSettings>;
+}
+
 export interface StudentShareReport {
   studentName: string;
   schoolName: string;

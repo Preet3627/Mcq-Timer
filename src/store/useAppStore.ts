@@ -14,6 +14,9 @@ import {
   FlashcardItem,
   HistorySnapshot,
   DeepLinkPayload,
+  ExamScoreRecord,
+  MotivationalQuoteItem,
+  AIPlannerImportPayload,
 } from '../types';
 import { getOriginalAshadeepTimetable } from '../data/ashadeepSchedule';
 import { INITIAL_AUTO_FLASHCARDS } from '../data/autoFlashcards';
@@ -79,6 +82,8 @@ interface AppState {
   showDeepLinkModal: boolean;
   showVersionModal: boolean;
   showTeacherReportModal: boolean;
+  showAIPlannerModal: boolean;
+  examScores: ExamScoreRecord[];
 
   // Actions
   setTestSettings: (settings: TestSettings) => void;
@@ -109,12 +114,16 @@ interface AppState {
   restoreHistorySnapshot: (snapshotId: string) => boolean;
   deleteHistorySnapshot: (snapshotId: string) => void;
 
-  // Deep Link Actions
+  // Deep Link & AI Planner Actions
   setPendingDeepLink: (payload: DeepLinkPayload | null) => void;
   setShowDeepLinkModal: (show: boolean) => void;
   setShowVersionModal: (show: boolean) => void;
   setShowTeacherReportModal: (show: boolean) => void;
+  setShowAIPlannerModal: (show: boolean) => void;
   applyDeepLinkPayload: (payload: DeepLinkPayload) => void;
+  importAIPlannerPayload: (payload: AIPlannerImportPayload) => void;
+  addExamScore: (record: ExamScoreRecord) => void;
+  deleteExamScore: (id: string) => void;
 
   // School & Timetable Actions
   setSchoolProfile: (profile: SchoolProfile | null) => void;
@@ -175,7 +184,7 @@ export const useAppStore = create<AppState>()(
         stream: 'JEE',
         isVerified: true,
       },
-      customTimetable: getOriginalAshadeepTimetable(),
+      customTimetable: [],
       showSchoolModal: false,
 
       flashcards: INITIAL_AUTO_FLASHCARDS,
@@ -184,6 +193,8 @@ export const useAppStore = create<AppState>()(
       showDeepLinkModal: false,
       showVersionModal: false,
       showTeacherReportModal: false,
+      showAIPlannerModal: false,
+      examScores: [],
 
       setTestSettings: (settings) => set({ testSettings: settings, lastSettings: settings }),
       setLastSettings: (settings) => set({ lastSettings: settings, testSettings: settings }),
@@ -384,10 +395,24 @@ export const useAppStore = create<AppState>()(
         return await createGoogleCalendarEvent(user.accessToken, eventData);
       },
 
-      setSchoolProfile: (profile) => set({ schoolProfile: profile }),
+      setSchoolProfile: (profile) => {
+        set({ schoolProfile: profile });
+        if (profile.schoolType === 'ashadeep' && profile.isVerified) {
+          set({ customTimetable: getOriginalAshadeepTimetable() });
+        } else {
+          set({ customTimetable: [] });
+        }
+      },
       setShowSchoolModal: (show) => set({ showSchoolModal: show }),
 
-      restoreDefaultTimetable: () => set({ customTimetable: getOriginalAshadeepTimetable() }),
+      restoreDefaultTimetable: () => {
+        const { schoolProfile } = get();
+        if (schoolProfile?.schoolType === 'ashadeep' && schoolProfile?.isVerified) {
+          set({ customTimetable: getOriginalAshadeepTimetable() });
+        } else {
+          set({ customTimetable: [] });
+        }
+      },
 
       updateTimetableEvent: (updated) => {
         const list = get().customTimetable.map((item) =>
@@ -481,7 +506,7 @@ export const useAppStore = create<AppState>()(
 
         set({
           sessions: target.data.sessions || [],
-          customTimetable: target.data.customTimetable || getOriginalAshadeepTimetable(),
+          customTimetable: target.data.customTimetable || [],
           flashcards: target.data.flashcards || INITIAL_AUTO_FLASHCARDS,
           testSettings: target.data.testSettings || DEFAULT_SETTINGS,
           schoolProfile: target.data.schoolProfile || get().schoolProfile,
@@ -532,6 +557,67 @@ export const useAppStore = create<AppState>()(
 
         set({ pendingDeepLink: null, showDeepLinkModal: false });
       },
+
+      setShowAIPlannerModal: (show) => set({ showAIPlannerModal: show }),
+
+      addExamScore: (record) => {
+        const updated = [record, ...get().examScores.filter((e) => e.id !== record.id)];
+        set({ examScores: updated });
+      },
+
+      deleteExamScore: (id) => {
+        set({ examScores: get().examScores.filter((e) => e.id !== id) });
+      },
+
+      importAIPlannerPayload: (payload) => {
+        // Create safety backup
+        get().createHistorySnapshot(
+          'pre_import_backup',
+          `AI Planner JSON Import (${payload.title || 'All-In-One AI Package'})`
+        );
+
+        if (payload.schoolProfile) {
+          const updatedProfile = {
+            ...get().schoolProfile,
+            ...payload.schoolProfile,
+          } as SchoolProfile;
+          set({ schoolProfile: updatedProfile });
+        }
+
+        if (payload.customTimetable && payload.customTimetable.length > 0) {
+          const currentEvents = get().customTimetable;
+          const mergedEvents = [...payload.customTimetable, ...currentEvents];
+          const uniqueEventsMap = new Map<string, AshadeepExamEvent>();
+          mergedEvents.forEach((ev) => uniqueEventsMap.set(ev.id || ev.code, ev));
+          set({ customTimetable: Array.from(uniqueEventsMap.values()) });
+        }
+
+        if (payload.flashcards && payload.flashcards.length > 0) {
+          const currentCards = get().flashcards;
+          const mergedCards = [...payload.flashcards, ...currentCards];
+          const uniqueCardsMap = new Map<string, FlashcardItem>();
+          mergedCards.forEach((card) => uniqueCardsMap.set(card.id, card));
+          set({ flashcards: Array.from(uniqueCardsMap.values()) });
+        }
+
+        if (payload.examScores && payload.examScores.length > 0) {
+          const currentScores = get().examScores;
+          const mergedScores = [...payload.examScores, ...currentScores];
+          const uniqueScoresMap = new Map<string, ExamScoreRecord>();
+          mergedScores.forEach((s) => uniqueScoresMap.set(s.id || `${s.examCode}-${s.subject}`, s));
+          set({ examScores: Array.from(uniqueScoresMap.values()) });
+        }
+
+        if (payload.presetPracticeSession) {
+          const mergedSettings: TestSettings = {
+            ...get().testSettings,
+            ...payload.presetPracticeSession,
+          };
+          set({ testSettings: mergedSettings });
+        }
+
+        set({ showAIPlannerModal: false });
+      },
     }),
     {
       name: 'qtick_store_v1',
@@ -549,6 +635,7 @@ export const useAppStore = create<AppState>()(
         customTimetable: state.customTimetable,
         flashcards: state.flashcards,
         historySnapshots: state.historySnapshots,
+        examScores: state.examScores,
       }),
     }
   )

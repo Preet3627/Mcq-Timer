@@ -93,49 +93,87 @@ export const FlashcardsView: React.FC = () => {
     const upcoming = customTimetable.slice(0, 3);
     const newGeneratedCards: FlashcardItem[] = [];
 
-    upcoming.forEach((ev, idx) => {
-      if (ev.subject.includes('Physics') || ev.subject.includes('CPM')) {
-        newGeneratedCards.push({
-          id: `fc-auto-p-${Date.now()}-${idx}`,
+    if (upcoming.length === 0) {
+      newGeneratedCards.push(
+        {
+          id: `fc-auto-p-${Date.now()}`,
           subject: 'Physics',
-          topic: ev.syllabus.split(';')[0] || 'Physics Mechanics',
-          front: `Formula Sheet: ${ev.code} (${ev.syllabus.substring(0, 25)}...)`,
-          back: `• Work-Energy Theorem: W_net = ΔK\n• Conservation of Momentum: P_initial = P_final\n• Center of Mass: X_cm = ∑(m_i x_i) / ∑m_i`,
+          topic: 'Mechanics & Electrostatics',
+          front: 'Key Physics Formulae: Kinematics & Work Energy',
+          back: '• Kinematics: v = u + at, s = ut + ½at², v² = u² + 2as\n• Work-Energy Theorem: W_net = ΔK\n• Coulomb\'s Law: F = k|q1 q2|/r²',
           type: 'formula',
-          examTag: ev.code,
+          examTag: 'JEE Core',
           isLearned: false,
           createdAt: new Date().toISOString().split('T')[0],
-        });
-      }
-
-      if (ev.subject.includes('Maths') || ev.subject.includes('CPM')) {
-        newGeneratedCards.push({
-          id: `fc-auto-m-${Date.now()}-${idx}`,
-          subject: 'Mathematics',
-          topic: ev.syllabus.split(';')[0] || 'Calculus & Algebra',
-          front: `Key Shortcut: ${ev.code} Integration / Calculus`,
-          back: `• Integration by Parts: ∫u dv = uv - ∫v du\n• Definite Integral Property: ∫[a to b] f(x)dx = ∫[a to b] f(a+b-x)dx`,
-          type: 'shortcut',
-          examTag: ev.code,
-          isLearned: false,
-          createdAt: new Date().toISOString().split('T')[0],
-        });
-      }
-
-      if (ev.subject.includes('Chemistry') || ev.subject.includes('CPM')) {
-        newGeneratedCards.push({
-          id: `fc-auto-c-${Date.now()}-${idx}`,
+        },
+        {
+          id: `fc-auto-c-${Date.now()}`,
           subject: 'Chemistry',
-          topic: ev.syllabus.split(';')[0] || 'Physical Chemistry',
-          front: `Formula Card: ${ev.code} Equilibrium & Kinetics`,
-          back: `• Arrhenius Equation: k = A e^(-Ea / RT)\n• First Order Half Life: t_1/2 = 0.693 / k\n• pH calculation: pH = pKa + log([Salt]/[Acid])`,
+          topic: 'Physical Chemistry & Kinetics',
+          front: 'Key Chemistry Formulae: Kinetics & Thermodynamics',
+          back: '• Arrhenius Equation: k = A e^(-Ea / RT)\n• First Order Half Life: t_1/2 = 0.693 / k\n• ΔG = ΔH - TΔS',
           type: 'formula',
-          examTag: ev.code,
+          examTag: 'JEE Core',
           isLearned: false,
           createdAt: new Date().toISOString().split('T')[0],
-        });
-      }
-    });
+        },
+        {
+          id: `fc-auto-m-${Date.now()}`,
+          subject: 'Mathematics',
+          topic: 'Calculus & Algebra',
+          front: 'Key Math Formulae: Derivatives & Integration',
+          back: '• Integration by Parts: ∫u dv = uv - ∫v du\n• Quadratic Roots: x = (-b ± √(b² - 4ac)) / (2a)\n• Definite Integral: ∫[a to b] f(x)dx = ∫[a to b] f(a+b-x)dx',
+          type: 'shortcut',
+          examTag: 'JEE Core',
+          isLearned: false,
+          createdAt: new Date().toISOString().split('T')[0],
+        }
+      );
+    } else {
+      upcoming.forEach((ev, idx) => {
+        if (ev.subject.includes('Physics') || ev.subject.includes('CPM')) {
+          newGeneratedCards.push({
+            id: `fc-auto-p-${Date.now()}-${idx}`,
+            subject: 'Physics',
+            topic: ev.syllabus.split(';')[0] || 'Physics Mechanics',
+            front: `Formula Sheet: ${ev.code} (${ev.syllabus.substring(0, 25)}...)`,
+            back: `• Work-Energy Theorem: W_net = ΔK\n• Conservation of Momentum: P_initial = P_final\n• Center of Mass: X_cm = ∑(m_i x_i) / ∑m_i`,
+            type: 'formula',
+            examTag: ev.code,
+            isLearned: false,
+            createdAt: new Date().toISOString().split('T')[0],
+          });
+        }
+
+        if (ev.subject.includes('Maths') || ev.subject.includes('CPM')) {
+          newGeneratedCards.push({
+            id: `fc-auto-m-${Date.now()}-${idx}`,
+            subject: 'Mathematics',
+            topic: ev.syllabus.split(';')[0] || 'Calculus & Algebra',
+            front: `Key Shortcut: ${ev.code} Integration / Calculus`,
+            back: `• Integration by Parts: ∫u dv = uv - ∫v du\n• Definite Integral Property: ∫[a to b] f(x)dx = ∫[a to b] f(a+b-x)dx`,
+            type: 'shortcut',
+            examTag: ev.code,
+            isLearned: false,
+            createdAt: new Date().toISOString().split('T')[0],
+          });
+        }
+
+        if (ev.subject.includes('Chemistry') || ev.subject.includes('CPM')) {
+          newGeneratedCards.push({
+            id: `fc-auto-c-${Date.now()}-${idx}`,
+            subject: 'Chemistry',
+            topic: ev.syllabus.split(';')[0] || 'Physical Chemistry',
+            front: `Formula Card: ${ev.code} Equilibrium & Kinetics`,
+            back: `• Arrhenius Equation: k = A e^(-Ea / RT)\n• First Order Half Life: t_1/2 = 0.693 / k\n• pH calculation: pH = pKa + log([Salt]/[Acid])`,
+            type: 'formula',
+            examTag: ev.code,
+            isLearned: false,
+            createdAt: new Date().toISOString().split('T')[0],
+          });
+        }
+      });
+    }
 
     if (newGeneratedCards.length > 0) {
       newGeneratedCards.forEach((c) => addFlashcard(c));

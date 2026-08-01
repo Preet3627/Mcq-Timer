@@ -16,6 +16,8 @@ import {
   Filter,
   Layers,
   RefreshCw,
+  Lock,
+  BrainCircuit,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import {
@@ -38,6 +40,7 @@ export const AshadeepPlannerView: React.FC = () => {
     scheduleCalendarEvent,
     user,
     setShowSchoolModal,
+    setShowAIPlannerModal,
     clearGoogleCalendarEvents,
   } = useAppStore();
 
@@ -145,8 +148,22 @@ export const AshadeepPlannerView: React.FC = () => {
     setTimeout(() => setSyncStatusMsg(null), 4000);
   };
 
+  const isAshadeepVerified =
+    schoolProfile?.schoolType === 'ashadeep' && schoolProfile?.isVerified;
+
   const handleRestoreDefault = () => {
-    if (window.confirm('Are you sure you want to restore the official Ashadeep 2026-27 timetable? Any custom edits will be reset.')) {
+    if (!isAshadeepVerified) {
+      alert(
+        'Official Ashadeep 2026-27 schedule is only available for verified Ashadeep IIT students. Please select Ashadeep IIT and enter authorization password.'
+      );
+      setShowSchoolModal(true);
+      return;
+    }
+    if (
+      window.confirm(
+        'Are you sure you want to restore the official Ashadeep 2026-27 timetable? Any custom edits will be reset.'
+      )
+    ) {
       restoreDefaultTimetable();
       setSyncStatusMsg('Timetable restored to official Ashadeep JEE Sankalp Batch 2026-27 schedule!');
       setTimeout(() => setSyncStatusMsg(null), 4000);
@@ -194,83 +211,151 @@ export const AshadeepPlannerView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-8 border border-indigo-500/20 shadow-xl relative overflow-hidden space-y-6">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+      {isAshadeepVerified ? (
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-8 border border-indigo-500/20 shadow-xl relative overflow-hidden space-y-6">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
-          <div className="space-y-2 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black tracking-wider uppercase flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                {ASHADEEP_HEADER.subtitle}
-              </span>
+          <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
+            <div className="space-y-2 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-black tracking-wider uppercase flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  {ASHADEEP_HEADER.subtitle}
+                </span>
 
-              <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold">
-                {schoolProfile?.schoolName || 'Ashadeep IIT Group'} ({schoolProfile?.stream || 'JEE'})
-              </span>
+                <span className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold">
+                  {schoolProfile?.schoolName || 'Ashadeep IIT Group'} ({schoolProfile?.stream || 'JEE'})
+                </span>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                {ASHADEEP_HEADER.title}
+              </h1>
+
+              <p className="text-sm text-slate-300 font-medium">
+                {ASHADEEP_HEADER.year} • {ASHADEEP_HEADER.batch} •{' '}
+                <span className="text-amber-300 font-bold">{ASHADEEP_HEADER.mission}</span>
+              </p>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
-              {ASHADEEP_HEADER.title}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAIPlannerModal(true)}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs transition-all flex items-center gap-1.5 shadow-md"
+              >
+                <BrainCircuit className="w-4 h-4 text-slate-950" />
+                <span>AI Planner & JSON Engine</span>
+              </button>
 
-            <p className="text-sm text-slate-300 font-medium">
-              {ASHADEEP_HEADER.year} • {ASHADEEP_HEADER.batch} •{' '}
-              <span className="text-amber-300 font-bold">{ASHADEEP_HEADER.mission}</span>
-            </p>
+              <button
+                type="button"
+                onClick={() => setShowSchoolModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all flex items-center gap-1.5"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Change School / Stream</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowSchoolModal(true)}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all flex items-center gap-1.5"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Change School / Stream</span>
-            </button>
+          {/* Statistics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-2 border-t border-white/10 relative z-10">
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Total Lectures</div>
+              <div className="text-xl font-black text-white mt-0.5">{ASHADEEP_HEADER.totalLectures}</div>
+              <div className="text-[10px] text-slate-400">Board + JEE</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Total Examinations</div>
+              <div className="text-xl font-black text-amber-300 mt-0.5">{ASHADEEP_HEADER.totalExams}</div>
+              <div className="text-[10px] text-slate-400">58 JMWT, 12 Kota, 30 RRT</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Physics Lec</div>
+              <div className="text-xl font-black text-cyan-300 mt-0.5">{ASHADEEP_HEADER.physicsLectures}</div>
+              <div className="text-[10px] text-slate-400">14 Chapters</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Maths Lec</div>
+              <div className="text-xl font-black text-purple-300 mt-0.5">{ASHADEEP_HEADER.mathsLectures}</div>
+              <div className="text-[10px] text-slate-400">15 Chapters</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Chemistry Lec</div>
+              <div className="text-xl font-black text-emerald-300 mt-0.5">{ASHADEEP_HEADER.chemLectures}</div>
+              <div className="text-[10px] text-slate-400">12 Chapters</div>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">AITS & FST</div>
+              <div className="text-xl font-black text-rose-300 mt-0.5">38 Tests</div>
+              <div className="text-[10px] text-slate-400">20 AITS + 18 FST</div>
+            </div>
           </div>
         </div>
+      ) : (
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 border border-slate-700/50 shadow-xl relative overflow-hidden space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
+            <div className="space-y-2 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-black tracking-wider uppercase flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{schoolProfile?.schoolType === 'custom' ? 'Custom School Mode' : 'Guest Mode'}</span>
+                </span>
 
-        {/* Statistics Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 pt-2 border-t border-white/10 relative z-10">
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Lectures</div>
-            <div className="text-xl font-black text-white mt-0.5">{ASHADEEP_HEADER.totalLectures}</div>
-            <div className="text-[10px] text-slate-400">Board + JEE</div>
+                <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-bold">
+                  {schoolProfile?.schoolName || 'Guest Student'} ({schoolProfile?.stream || 'JEE'})
+                </span>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
+                Personal MCQ & Exam Schedule Planner
+              </h1>
+
+              <p className="text-sm text-slate-300 font-medium">
+                Custom study planner for competitive entrance exam prep. Add your own mock tests and exam dates below.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowSchoolModal(true)}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all flex items-center gap-1.5 shadow-md"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Unlock Ashadeep Schedule</span>
+              </button>
+            </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Total Examinations</div>
-            <div className="text-xl font-black text-amber-300 mt-0.5">{ASHADEEP_HEADER.totalExams}</div>
-            <div className="text-[10px] text-slate-400">58 JMWT, 12 Kota, 30 RRT</div>
-          </div>
+          {/* Guest Statistics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-white/10 relative z-10">
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Scheduled Custom Events</div>
+              <div className="text-xl font-black text-amber-300 mt-0.5">{customTimetable.length}</div>
+              <div className="text-[10px] text-slate-400">User Defined</div>
+            </div>
 
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Physics Lec</div>
-            <div className="text-xl font-black text-cyan-300 mt-0.5">{ASHADEEP_HEADER.physicsLectures}</div>
-            <div className="text-[10px] text-slate-400">14 Chapters</div>
-          </div>
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Exam Stream</div>
+              <div className="text-xl font-black text-cyan-300 mt-0.5">{schoolProfile?.stream || 'JEE'}</div>
+              <div className="text-[10px] text-slate-400">Target Preparation</div>
+            </div>
 
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Maths Lec</div>
-            <div className="text-xl font-black text-purple-300 mt-0.5">{ASHADEEP_HEADER.mathsLectures}</div>
-            <div className="text-[10px] text-slate-400">15 Chapters</div>
-          </div>
-
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] uppercase font-bold text-slate-400">Chemistry Lec</div>
-            <div className="text-xl font-black text-emerald-300 mt-0.5">{ASHADEEP_HEADER.chemLectures}</div>
-            <div className="text-[10px] text-slate-400">12 Chapters</div>
-          </div>
-
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-            <div className="text-[10px] uppercase font-bold text-slate-400">AITS & FST</div>
-            <div className="text-xl font-black text-rose-300 mt-0.5">38 Tests</div>
-            <div className="text-[10px] text-slate-400">20 AITS + 18 FST</div>
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] uppercase font-bold text-slate-400">Ashadeep Schedule Status</div>
+              <div className="text-xl font-black text-rose-300 mt-0.5">Locked</div>
+              <div className="text-[10px] text-slate-400">Password Required</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Action Notification Status Bar */}
       {syncStatusMsg && (
@@ -430,8 +515,30 @@ export const AshadeepPlannerView: React.FC = () => {
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {filteredEvents.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                        No exam records matching search filter.
+                      <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                        <div className="max-w-md mx-auto space-y-3">
+                          <Calendar className="w-8 h-8 text-slate-400 mx-auto opacity-50" />
+                          <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                            {isAshadeepVerified
+                              ? 'No exam records matching your filter.'
+                              : 'No Exam Events Scheduled Yet'}
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            {isAshadeepVerified
+                              ? 'Try resetting your search query or subject filters.'
+                              : 'Click "+ Add Custom Exam" to build your personal timetable, or enter the Ashadeep student password to unlock the official 2026-27 schedule.'}
+                          </p>
+                          {!isAshadeepVerified && (
+                            <button
+                              type="button"
+                              onClick={() => setShowSchoolModal(true)}
+                              className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm"
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>Unlock Official Ashadeep Schedule</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (
