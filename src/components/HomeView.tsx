@@ -43,7 +43,48 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   return (
     <div className="space-y-6 pb-24 md:pb-8">
-      {/* Top Welcome Banner */}
+      {/* Active Unfinished Session Banner */}
+      {unfinishedSession && (
+        <div className="bg-amber-500/10 border border-amber-500/30 dark:bg-amber-950/40 dark:border-amber-500/40 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0">
+              <RotateCcw className="w-6 h-6 animate-spin-slow" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 uppercase tracking-wider">
+                  Incomplete Session
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  {Math.floor(unfinishedSession.totalSessionTime / 60)}m spent
+                </span>
+              </div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white mt-1">
+                {unfinishedSession.settings.subject} • {unfinishedSession.settings.exerciseNumber ? `Exercise ${unfinishedSession.settings.exerciseNumber}` : unfinishedSession.settings.mode}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Question {unfinishedSession.currentQ} of {unfinishedSession.settings.totalQuestions} ({Object.values(unfinishedSession.attempts).filter(a => a.selectedAns).length} answered)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <button
+              onClick={onContinueUnfinished}
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Resume Session</span>
+            </button>
+            <button
+              onClick={useAppStore.getState().clearUnfinishedSession}
+              className="px-3.5 py-2.5 rounded-2xl bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-rose-500 font-bold text-xs transition-colors"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 text-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-blue-500/10 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 

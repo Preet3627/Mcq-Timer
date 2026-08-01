@@ -36,6 +36,8 @@ export interface TestSettings {
   level?: PracticeLevel;
   exerciseNumber?: string;
   customTag?: string;
+  chapterName?: string;
+  description?: string;
   totalQuestions: number;
   targetTimePerQuestion: number; // in seconds (e.g. 180s = 3m)
   cautionThreshold: number; // in seconds (e.g. 180s = 3m)
@@ -45,6 +47,7 @@ export interface TestSettings {
   volume: number; // 0.0 to 1.0
   answerKey: QuestionAnswerKey[];
   enableNegativeMarking: boolean; // JEE (+4 / -1) vs NEET (+4 / -1)
+  feedbackMode?: 'test' | 'practice'; // 'test' = scorecard at end, 'practice' = instant answer highlight & web solution search
   hapticsEnabled?: boolean;
   notificationsEnabled?: boolean;
 }

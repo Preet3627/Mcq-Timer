@@ -7,6 +7,7 @@ import { HomeView } from './components/HomeView';
 import { SetupModal } from './components/SetupModal';
 import { InsightsView } from './components/InsightsView';
 import { SettingsView } from './components/SettingsView';
+import { HistoryView } from './components/HistoryView';
 import { TimerEngine } from './components/TimerEngine';
 import { ScorecardModal } from './components/ScorecardModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
@@ -14,8 +15,9 @@ import { AIPromptModal } from './components/AIPromptModal';
 import { CalendarModal } from './components/CalendarModal';
 import { OAuthSettingsModal } from './components/OAuthSettingsModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { TestSettings, TestSessionResult, NavTab } from './types';
+import { TestSettings, TestSessionResult, NavTab, UnfinishedSession } from './types';
 import { useAppStore } from './store/useAppStore';
+import { parseAnswerKeyInput } from './utils/answerKeyParser';
 import { startAmbientSound, stopAmbientSound, updateAmbientVolume } from './utils/audio';
 
 export default function App() {
@@ -79,8 +81,11 @@ export default function App() {
     };
   }, []);
 
+  const [resumeSessionState, setResumeSessionState] = useState<UnfinishedSession | null>(null);
+
   // Handle Start Test from Setup or Quick Start
   const handleStartTest = (settings: TestSettings) => {
+    setResumeSessionState(null);
     setTestSettings(settings);
     setLastSettings(settings);
     setView('timer');
@@ -89,6 +94,7 @@ export default function App() {
   // Handle Resume Unfinished Session
   const handleResumeUnfinished = () => {
     if (unfinishedSession) {
+      setResumeSessionState(unfinishedSession);
       setTestSettings(unfinishedSession.settings);
       setView('timer');
     }
@@ -214,64 +220,7 @@ export default function App() {
               )}
 
               {activeTab === 'history' && (
-                <div className="max-w-4xl mx-auto space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h1 className="text-2xl font-black text-slate-900 dark:text-white">Practice History</h1>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Review all your previous MCQ test sessions</p>
-                    </div>
-                    {sessions.length > 0 && (
-                      <button
-                        onClick={clearSessions}
-                        className="text-xs text-rose-600 dark:text-rose-400 font-bold hover:underline"
-                      >
-                        Clear All History
-                      </button>
-                    )}
-                  </div>
-
-                  {sessions.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 text-center text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800">
-                      No saved practice sessions yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {sessions.map((s) => (
-                        <div
-                          key={s.id}
-                          onClick={() => {
-                            setTestResult(s);
-                            setView('scorecard');
-                          }}
-                          className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between cursor-pointer hover:border-blue-500 transition-all"
-                        >
-                          <div>
-                            <div className="font-bold text-sm text-slate-900 dark:text-white">
-                              {s.settings.subject} • {s.settings.mode}
-                            </div>
-                            <div className="text-xs text-slate-500 font-mono">
-                              {new Date(s.date).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-                              {s.accuracy}% Accuracy
-                            </div>
-                            <div className="text-xs text-slate-400">
-                              {Math.round(s.totalTimeSpent / 60)}m spent ({s.avgTimePerQuestion}s/q)
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <HistoryView onOpenCalendarModal={() => setIsCalendarOpen(true)} />
               )}
 
               {activeTab === 'insights' && <InsightsView />}
@@ -285,6 +234,7 @@ export default function App() {
               settings={testSettings}
               onFinishTest={handleFinishTest}
               onResetSetup={handleResetSetup}
+              initialState={resumeSessionState}
             />
           )}
 
@@ -312,9 +262,17 @@ export default function App() {
         <AIPromptModal
           isOpen={isAIPromptOpen}
           onClose={() => setIsAIPromptOpen(false)}
-          subject={testSettings?.subject || 'Physics'}
-          totalQuestions={testSettings?.totalQuestions || 30}
-          onImportJSON={() => {}}
+          subject={testSettings?.subject || lastSettings.subject || 'Physics'}
+          totalQuestions={testSettings?.totalQuestions || lastSettings.totalQuestions || 30}
+          onImportJSON={(jsonStr) => {
+            const parsed = parseAnswerKeyInput(jsonStr, testSettings?.totalQuestions || lastSettings.totalQuestions || 30);
+            if (parsed.length > 0) {
+              if (testSettings) {
+                setTestSettings({ ...testSettings, answerKey: parsed });
+              }
+              setLastSettings({ ...lastSettings, answerKey: parsed });
+            }
+          }}
         />
 
         {/* Google Calendar Schedule Modal */}

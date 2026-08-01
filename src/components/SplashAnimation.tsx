@@ -52,14 +52,14 @@ export const SplashAnimation: React.FC<SplashAnimationProps> = ({ onComplete }) 
 
       {/* Main 3D Icon Container */}
       <div className="relative z-10 flex flex-col items-center gap-6">
-        <div className="relative">
+        <div className="relative flex items-center justify-center p-8">
           {/* Rotating 3D Gauge Ring */}
           <motion.svg
             viewBox="0 0 100 100"
-            className="w-32 h-32 absolute -inset-4 pointer-events-none"
+            className="w-48 h-48 absolute pointer-events-none z-0"
             initial={{ rotate: 0 }}
             animate={{ rotate: 360 }}
-            transition={{ duration: 1.4, ease: 'easeInOut' }}
+            transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
           >
             <circle
               cx="50"
@@ -67,8 +67,8 @@ export const SplashAnimation: React.FC<SplashAnimationProps> = ({ onComplete }) 
               r="44"
               fill="none"
               stroke="url(#splashGradient)"
-              strokeWidth="4"
-              strokeDasharray="210 60"
+              strokeWidth="3.5"
+              strokeDasharray="200 60"
               strokeLinecap="round"
             />
             <defs>
@@ -85,7 +85,7 @@ export const SplashAnimation: React.FC<SplashAnimationProps> = ({ onComplete }) 
             initial={{ scale: 0.6, opacity: 0, rotateY: -30 }}
             animate={{ scale: 1, opacity: 1, rotateY: 0 }}
             transition={{ duration: 0.7, delay: 0.1, type: 'spring', stiffness: 200 }}
-            className="p-5 rounded-3xl bg-slate-900 border border-white/20 shadow-2xl shadow-cyan-500/20"
+            className="relative z-10 p-5 rounded-3xl bg-slate-900/90 border border-white/20 shadow-2xl shadow-cyan-500/30 backdrop-blur-md"
           >
             <QTickLogo variant="icon" size="xl" />
           </motion.div>

@@ -36,6 +36,7 @@ export const DEFAULT_SETTINGS: TestSettings = {
   ambientSound: 'none',
   volume: 0.7,
   enableNegativeMarking: true,
+  feedbackMode: 'test',
   answerKey: Array.from({ length: 30 }, (_, i) => ({ q: i + 1, ans: '' })),
   hapticsEnabled: true,
   notificationsEnabled: true,
@@ -236,10 +237,19 @@ export const useAppStore = create<AppState>()(
           return true;
         } catch (err: any) {
           console.error('Drive Backup Error:', err);
-          set({
-            syncState: 'error',
-            syncError: err.message || 'Failed to sync to Google Drive.',
-          });
+          const isExpired = err?.message?.includes('401') || err?.message?.includes('expired');
+          if (isExpired && user) {
+            set({
+              user: { ...user, accessToken: undefined },
+              syncState: 'error',
+              syncError: 'Google authentication session expired. Please sign in again to re-connect.',
+            });
+          } else {
+            set({
+              syncState: 'error',
+              syncError: err.message || 'Failed to sync to Google Drive.',
+            });
+          }
           return false;
         }
       },
@@ -276,10 +286,19 @@ export const useAppStore = create<AppState>()(
           }
         } catch (err: any) {
           console.error('Drive Restore Error:', err);
-          set({
-            syncState: 'error',
-            syncError: err.message || 'Failed to restore from Google Drive.',
-          });
+          const isExpired = err?.message?.includes('401') || err?.message?.includes('expired');
+          if (isExpired && user) {
+            set({
+              user: { ...user, accessToken: undefined },
+              syncState: 'error',
+              syncError: 'Google authentication session expired. Please sign in again to re-connect.',
+            });
+          } else {
+            set({
+              syncState: 'error',
+              syncError: err.message || 'Failed to restore from Google Drive.',
+            });
+          }
           return false;
         }
       },

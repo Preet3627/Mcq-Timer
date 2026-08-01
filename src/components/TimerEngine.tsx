@@ -17,26 +17,32 @@ import {
   Zap,
   HelpCircle,
   Clock,
-  Smartphone
+  Smartphone,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TestSettings, QuestionAttemptState, QuestionStatus, TestSessionResult } from '../types';
+import { TestSettings, QuestionAttemptState, QuestionStatus, TestSessionResult, UnfinishedSession } from '../types';
 import { playClickSound, playCautionChime, playUrgentAlarm, startAmbientSound, stopAmbientSound } from '../utils/audio';
 import { requestScreenWakeLock, releaseScreenWakeLock, vibrateDevice, sendSystemNotification } from '../utils/device';
+import { useAppStore } from '../store/useAppStore';
 
 interface TimerEngineProps {
   settings: TestSettings;
   onFinishTest: (result: TestSessionResult) => void;
   onResetSetup: () => void;
+  initialState?: UnfinishedSession | null;
 }
 
 export const TimerEngine: React.FC<TimerEngineProps> = ({
   settings,
   onFinishTest,
-  onResetSetup
+  onResetSetup,
+  initialState
 }) => {
+  const { setUnfinishedSession, clearUnfinishedSession } = useAppStore();
+
   // Test State
-  const [currentQ, setCurrentQ] = useState(1);
+  const [currentQ, setCurrentQ] = useState(initialState?.currentQ || 1);
   const [isPaused, setIsPaused] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [isNumericalMode, setIsNumericalMode] = useState(false);
@@ -44,6 +50,9 @@ export const TimerEngine: React.FC<TimerEngineProps> = ({
 
   // Per-question attempts map: qNum -> QuestionAttemptState
   const [attempts, setAttempts] = useState<Record<number, QuestionAttemptState>>(() => {
+    if (initialState?.attempts) {
+      return initialState.attempts;
+    }
     const initial: Record<number, QuestionAttemptState> = {};
     for (let i = 1; i <= settings.totalQuestions; i++) {
       initial[i] = {
@@ -59,7 +68,18 @@ export const TimerEngine: React.FC<TimerEngineProps> = ({
   });
 
   // Total session timer in seconds
-  const [totalSessionTime, setTotalSessionTime] = useState(0);
+  const [totalSessionTime, setTotalSessionTime] = useState(initialState?.totalSessionTime || 0);
+
+  // Auto-sync active state to store for session resumption anytime
+  useEffect(() => {
+    setUnfinishedSession({
+      settings,
+      attempts,
+      currentQ,
+      totalSessionTime,
+      updatedAt: new Date().toISOString()
+    });
+  }, [attempts, currentQ, totalSessionTime, settings]);
 
   // Activate Screen Wake Lock while timer is running
   useEffect(() => {
@@ -267,6 +287,7 @@ export const TimerEngine: React.FC<TimerEngineProps> = ({
   const handleFinishSession = () => {
     playClickSound(settings.soundEnabled, settings.volume);
     vibrateDevice([100, 50, 200]);
+    clearUnfinishedSession();
 
     // Calculate Scores & Metrics
     let totalCorrect = 0;
@@ -575,7 +596,9 @@ export const TimerEngine: React.FC<TimerEngineProps> = ({
           {/* Center Section: Option Input & Answer Key Checker */}
           <div className="space-y-4 pt-4 border-t border-white/10 relative z-10">
             <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="font-semibold text-slate-300">Select Your Answer:</span>
+              <span className="font-semibold text-slate-300">
+                Select Your Answer {settings.feedbackMode === 'practice' && <span className="text-emerald-400 font-bold">(Practice Mode: Instant Feedback)</span>}:
+              </span>
               <button
                 onClick={() => setIsNumericalMode(!isNumericalMode)}
                 className="text-cyan-400 hover:text-cyan-300 font-semibold underline"
@@ -584,22 +607,95 @@ export const TimerEngine: React.FC<TimerEngineProps> = ({
               </button>
             </div>
 
+            {/* Practice Mode Instant Feedback Banner */}
+            {settings.feedbackMode === 'practice' && currentAttempt.selectedAns && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-3.5 rounded-2xl border text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-lg ${
+                  (() => {
+                    const configuredAnsKey = settings.answerKey?.find((k) => k.q === currentQ)?.ans?.trim()?.toUpperCase();
+                    if (!configuredAnsKey) return 'bg-blue-950/80 border-blue-500/50 text-blue-300';
+                    return currentAttempt.selectedAns.toUpperCase() === configuredAnsKey
+                      ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300'
+                      : 'bg-rose-950/90 border-rose-500/50 text-rose-300';
+                  })()
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const configuredAnsKey = settings.answerKey?.find((k) => k.q === currentQ)?.ans?.trim()?.toUpperCase();
+                    if (!configuredAnsKey) {
+                      return (
+                        <>
+                          <Zap className="w-5 h-5 text-cyan-400 shrink-0" />
+                          <span>Selected Option {currentAttempt.selectedAns}</span>
+                        </>
+                      );
+                    }
+                    if (currentAttempt.selectedAns.toUpperCase() === configuredAnsKey) {
+                      return (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                          <span>🎉 Excellent! Option {currentAttempt.selectedAns.toUpperCase()} is CORRECT (+4 Marks)</span>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <>
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                          <span>❌ Incorrect! Option {currentAttempt.selectedAns.toUpperCase()} selected. Correct is Option {configuredAnsKey} (-1 Mark)</span>
+                        </>
+                      );
+                    }
+                  })()}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const query = `JEE NEET ${settings.subject} ${settings.exerciseNumber ? 'Exercise ' + settings.exerciseNumber : settings.mode} Question ${currentQ} solution explanation`;
+                    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] border border-white/20 flex items-center gap-1.5 transition-colors"
+                >
+                  <Search className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>🔎 Search Web Solution</span>
+                </button>
+              </motion.div>
+            )}
+
             {/* Standard MCQ Options (A, B, C, D) */}
             {!isNumericalMode ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {['A', 'B', 'C', 'D'].map((opt) => {
                   const isSelected = currentAttempt.selectedAns === opt;
+                  const configuredAnsKey = settings.answerKey?.find((k) => k.q === currentQ)?.ans?.trim()?.toUpperCase();
+                  const isPractice = settings.feedbackMode === 'practice';
+                  const isCorrectOpt = configuredAnsKey === opt;
+                  const isWrongSelected = isSelected && configuredAnsKey && !isCorrectOpt;
+
+                  let styleClasses = 'bg-white/10 border-white/20 text-slate-100 hover:border-cyan-400/50 hover:bg-white/15';
+
+                  if (isPractice && currentAttempt.selectedAns) {
+                    if (isSelected && isCorrectOpt) {
+                      styleClasses = 'bg-emerald-500 text-slate-950 border-emerald-300 ring-4 ring-emerald-500/40 shadow-emerald-500/30';
+                    } else if (isWrongSelected) {
+                      styleClasses = 'bg-rose-500 text-white border-rose-300 ring-4 ring-rose-500/40 shadow-rose-500/30';
+                    } else if (isCorrectOpt) {
+                      styleClasses = 'bg-emerald-950/90 text-emerald-300 border-emerald-500 border-2 ring-2 ring-emerald-500/30 font-bold';
+                    }
+                  } else if (isSelected) {
+                    styleClasses = 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 border-cyan-300 shadow-cyan-500/20 ring-4 ring-cyan-500/30';
+                  }
+
                   return (
                     <motion.button
                       key={opt}
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.96 }}
                       onClick={() => handleOptionSelect(opt)}
-                      className={`h-20 rounded-2xl border-2 font-black text-2xl flex flex-col items-center justify-center transition-all shadow-lg relative ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 border-cyan-300 shadow-cyan-500/20 ring-4 ring-cyan-500/30'
-                          : 'bg-white/10 border-white/20 text-slate-100 hover:border-cyan-400/50 hover:bg-white/15'
-                      }`}
+                      className={`h-20 rounded-2xl border-2 font-black text-2xl flex flex-col items-center justify-center transition-all shadow-lg relative ${styleClasses}`}
                     >
                       <span className="text-2xl">{opt}</span>
                       <span className="text-[10px] font-medium opacity-60">Key [{opt}]</span>

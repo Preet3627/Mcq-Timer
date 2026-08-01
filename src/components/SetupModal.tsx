@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Subject, PracticeMode, PracticeLevel, TestSettings, QuestionAnswerKey } from '../types';
 import { useAppStore } from '../store/useAppStore';
+import { parseAnswerKeyInput } from '../utils/answerKeyParser';
 
 interface SetupModalProps {
   onStartTest: (settings: TestSettings) => void;
@@ -28,7 +29,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
   onOpenAIPrompt,
   initialSettings,
 }) => {
-  const { lastSettings } = useAppStore();
+  const { lastSettings, unfinishedSession, clearUnfinishedSession } = useAppStore();
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
@@ -48,6 +49,18 @@ export const SetupModal: React.FC<SetupModalProps> = ({
 
   const [exerciseNumber, setExerciseNumber] = useState<string>(
     initialSettings?.exerciseNumber || lastSettings.exerciseNumber || ''
+  );
+
+  const [chapterName, setChapterName] = useState<string>(
+    initialSettings?.chapterName || lastSettings.chapterName || ''
+  );
+
+  const [description, setDescription] = useState<string>(
+    initialSettings?.description || lastSettings.description || ''
+  );
+
+  const [feedbackMode, setFeedbackMode] = useState<'test' | 'practice'>(
+    initialSettings?.feedbackMode || lastSettings.feedbackMode || 'test'
   );
 
   const [questionCount, setQuestionCount] = useState<number>(
@@ -95,33 +108,14 @@ export const SetupModal: React.FC<SetupModalProps> = ({
     { id: 'Custom', label: 'Custom', desc: 'Flexible custom set' },
   ];
 
-  // Parse pasted sequence (e.g., ABCDABCD or 1. A, 2. B, 3. C)
+  // Parse pasted sequence (supports options A-D, numerical/integer values, and JSON)
   const handleParsePastedSequence = (text: string) => {
     setPastedSequence(text);
+    const parsedList = parseAnswerKeyInput(text, questionCount);
     const map: Record<number, string> = {};
-    let matchedIndex = 1;
-
-    // Check line by line format (1. A or 1: B)
-    const lines = text.split(/\r?\n/);
-    lines.forEach((line) => {
-      const match = line.match(/^\s*(\d+)[\.\:\-\s]+([A-[#a-dA-D1-4])\s*$/);
-      if (match) {
-        const qNum = parseInt(match[1], 10);
-        const ans = match[2].toUpperCase();
-        if (qNum <= questionCount) {
-          map[qNum] = ans;
-        }
-      }
+    parsedList.forEach((item) => {
+      map[item.q] = item.ans;
     });
-
-    // If no line-by-line matches, parse raw character string (e.g., ABCDABCD)
-    if (Object.keys(map).length === 0) {
-      const rawLetters = text.replace(/[^a-dA-D1-4]/g, '').toUpperCase();
-      for (let i = 0; i < rawLetters.length && i < questionCount; i++) {
-        map[i + 1] = rawLetters[i];
-      }
-    }
-
     setManualAnswers((prev) => ({ ...prev, ...map }));
   };
 
@@ -165,6 +159,8 @@ export const SetupModal: React.FC<SetupModalProps> = ({
       mode: practiceType,
       level: practiceLevel,
       exerciseNumber: exerciseNumber.trim() || undefined,
+      chapterName: chapterName.trim() || undefined,
+      description: description.trim() || undefined,
       totalQuestions: effectiveQCount,
       targetTimePerQuestion: cautionMinutes * 60,
       cautionThreshold: cautionMinutes * 60,
@@ -174,6 +170,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
       volume: 0.7,
       answerKey: answerKeyList,
       enableNegativeMarking: true,
+      feedbackMode,
     };
 
     onStartTest(settings);
@@ -181,6 +178,35 @@ export const SetupModal: React.FC<SetupModalProps> = ({
 
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 pb-24 space-y-6">
+      {/* Active Unfinished Session Banner */}
+      {unfinishedSession && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+          <div className="flex items-center gap-2">
+            <RotateCcw className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <div className="font-bold text-sm">Half-Attempted Session in Progress!</div>
+              <p className="text-slate-600 dark:text-amber-300/80">
+                {unfinishedSession.settings.subject} • {unfinishedSession.settings.exerciseNumber ? `Ex ${unfinishedSession.settings.exerciseNumber}` : unfinishedSession.settings.mode} (Question {unfinishedSession.currentQ}/{unfinishedSession.settings.totalQuestions} • {Math.floor(unfinishedSession.totalSessionTime / 60)}m spent)
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={() => onStartTest(unfinishedSession.settings)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-sm transition-all"
+            >
+              Resume Session
+            </button>
+            <button
+              onClick={clearUnfinishedSession}
+              className="px-3 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-rose-500 font-semibold rounded-xl transition-all"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Step Progress Bar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
         {[
@@ -363,6 +389,35 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                 </div>
               </div>
 
+              {/* Chapter Name & Description Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Chapter Name <span className="text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={chapterName}
+                    onChange={(e) => setChapterName(e.target.value)}
+                    placeholder="e.g. Rotational Motion / Electrostatics"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Session Description / Notes <span className="text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="e.g. Speed focus on numericals"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
               {/* Level choices if applicable */}
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Difficulty Level</label>
@@ -380,6 +435,50 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                       {lvl}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Feedback Mode: Test vs Practice */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Execution & Feedback Mode
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackMode('test')}
+                    className={`p-3.5 rounded-2xl border text-left transition-all ${
+                      feedbackMode === 'test'
+                        ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-900 dark:text-cyan-300 ring-2 ring-blue-500/20'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    <div className="font-bold text-xs sm:text-sm flex items-center justify-between text-slate-900 dark:text-white">
+                      <span>📝 Test Mode</span>
+                      {feedbackMode === 'test' && <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-cyan-400" />}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      Real exam simulation. Answers & scorecards revealed at the end.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackMode('practice')}
+                    className={`p-3.5 rounded-2xl border text-left transition-all ${
+                      feedbackMode === 'practice'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-900 dark:text-emerald-300 ring-2 ring-emerald-500/20'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    <div className="font-bold text-xs sm:text-sm flex items-center justify-between text-slate-900 dark:text-white">
+                      <span>🎯 Practice Mode (Instant)</span>
+                      {feedbackMode === 'practice' && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      Options highlight immediately (Green/Red) + Search Google for solutions.
+                    </p>
+                  </button>
                 </div>
               </div>
 
@@ -506,8 +605,8 @@ export const SetupModal: React.FC<SetupModalProps> = ({
               {/* Entry Mode Tabs */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl text-xs font-semibold">
                 {[
-                  { id: 'now', label: 'Manual Entry' },
-                  { id: 'paste', label: 'Paste Sequence' },
+                  { id: 'now', label: 'Manual / Numerical' },
+                  { id: 'paste', label: 'Paste / AI JSON' },
                   { id: 'image', label: 'Upload Image' },
                   { id: 'later', label: 'Add Later' },
                 ].map((tab) => (
@@ -525,45 +624,68 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                 ))}
               </div>
 
-              {/* Mode 1: Manual Entry Grid */}
+              {/* Mode 1: Manual Entry Grid (Supports options A-D and Numerical values like 12.5) */}
               {answerEntryMode === 'now' && (
-                <div className="space-y-3 max-h-60 overflow-y-auto p-1">
-                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                    {Array.from({ length: customQCount ? parseInt(customQCount, 10) || 30 : questionCount }, (_, idx) => {
-                      const qNum = idx + 1;
-                      const val = manualAnswers[qNum] || '';
-                      return (
-                        <div key={qNum} className="space-y-1 text-center">
-                          <span className="text-[10px] text-slate-400 font-mono">Q{qNum}</span>
-                          <input
-                            type="text"
-                            maxLength={1}
-                            value={val}
-                            onChange={(e) => {
-                              const char = e.target.value.toUpperCase();
-                              setManualAnswers((prev) => ({ ...prev, [qNum]: char }));
-                            }}
-                            placeholder="-"
-                            className="w-full h-9 text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold uppercase text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                          />
-                        </div>
-                      );
-                    })}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>Supports Options A, B, C, D and Numerical / Decimal / Integer values (e.g. 12, 3.14, -5)</span>
+                    <button
+                      type="button"
+                      onClick={onOpenAIPrompt}
+                      className="text-purple-600 dark:text-purple-400 hover:underline font-bold flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>AI Prompt & JSON Helper</span>
+                    </button>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto p-1">
+                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                      {Array.from({ length: customQCount ? parseInt(customQCount, 10) || 30 : questionCount }, (_, idx) => {
+                        const qNum = idx + 1;
+                        const val = manualAnswers[qNum] || '';
+                        return (
+                          <div key={qNum} className="space-y-1 text-center">
+                            <span className="text-[10px] text-slate-400 font-mono">Q{qNum}</span>
+                            <input
+                              type="text"
+                              maxLength={10}
+                              value={val}
+                              onChange={(e) => {
+                                const char = e.target.value.toUpperCase();
+                                setManualAnswers((prev) => ({ ...prev, [qNum]: char }));
+                              }}
+                              placeholder="e.g. A / 12.5"
+                              className="w-full h-9 text-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold uppercase text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Mode 2: Paste Sequence */}
+              {/* Mode 2: Paste Sequence / AI JSON */}
               {answerEntryMode === 'paste' && (
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                    Paste raw answer sequence (e.g., ABCDABCD or 1. A, 2. B, 3. C)
-                  </label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                      Paste Answer Sequence or AI JSON e.g. [{"{"}"q":1,"ans":"A"{"}"},{"{"}"q":2,"ans":"12.5"{"}"}] or 1:A 2:12.5
+                    </label>
+                    <button
+                      type="button"
+                      onClick={onOpenAIPrompt}
+                      className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 font-bold text-xs border border-purple-500/30 flex items-center gap-1 transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Get AI Prompt for ChatGPT</span>
+                    </button>
+                  </div>
                   <textarea
                     rows={4}
                     value={pastedSequence}
                     onChange={(e) => handleParsePastedSequence(e.target.value)}
-                    placeholder="Paste your answer key here..."
+                    placeholder='Paste here e.g. ABCDABCD or [{"q":1,"ans":"A"},{"q":2,"ans":"12.5"}]...'
                     className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
