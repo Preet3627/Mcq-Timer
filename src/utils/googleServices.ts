@@ -86,7 +86,14 @@ async function findDriveBackupFile(accessToken: string): Promise<string | null> 
     if (response.status === 401) {
       throw new Error('Google authentication session expired. Please sign in again.');
     }
-    throw new Error(`Google Drive API search error: ${response.statusText}`);
+    const errObj = await response.json().catch(() => ({}));
+    const errorMsg = errObj?.error?.message || response.statusText || `HTTP ${response.status}`;
+    if (response.status === 403) {
+      throw new Error(
+        `Google Drive API Permission Error (403): ${errorMsg}. Please ensure Google Drive API is enabled in your Google Cloud Console for this Client ID.`
+      );
+    }
+    throw new Error(`Google Drive API search error: ${errorMsg}`);
   }
 
   const data = await response.json();
@@ -104,7 +111,16 @@ export async function saveToGoogleDrive(
   payload: BackupPayload
 ): Promise<string> {
   const fileContent = JSON.stringify(payload, null, 2);
-  const existingFileId = await findDriveBackupFile(accessToken);
+  let existingFileId: string | null = null;
+
+  try {
+    existingFileId = await findDriveBackupFile(accessToken);
+  } catch (err: any) {
+    console.warn('Drive search warning, proceeding to create file:', err);
+    if (err.message?.includes('expired') || err.message?.includes('401')) {
+      throw err;
+    }
+  }
 
   const metadata = {
     name: DRIVE_FILE_NAME,
@@ -130,7 +146,9 @@ export async function saveToGoogleDrive(
       }
     );
     if (!uploadRes.ok) {
-      throw new Error(`Failed to update Google Drive backup: ${uploadRes.statusText}`);
+      const errObj = await uploadRes.json().catch(() => ({}));
+      const msg = errObj?.error?.message || uploadRes.statusText;
+      throw new Error(`Failed to update Google Drive backup: ${msg}`);
     }
     return existingFileId;
   } else {
@@ -144,7 +162,9 @@ export async function saveToGoogleDrive(
       }
     );
     if (!uploadRes.ok) {
-      throw new Error(`Failed to create Google Drive backup: ${uploadRes.statusText}`);
+      const errObj = await uploadRes.json().catch(() => ({}));
+      const msg = errObj?.error?.message || uploadRes.statusText;
+      throw new Error(`Failed to create Google Drive backup: ${msg}`);
     }
     const result = await uploadRes.json();
     return result.id;
@@ -155,7 +175,17 @@ export async function saveToGoogleDrive(
  * Restore user config, settings, and test history from the user's personal Google Drive
  */
 export async function loadFromGoogleDrive(accessToken: string): Promise<BackupPayload | null> {
-  const existingFileId = await findDriveBackupFile(accessToken);
+  let existingFileId: string | null = null;
+  try {
+    existingFileId = await findDriveBackupFile(accessToken);
+  } catch (err: any) {
+    if (err.message?.includes('expired') || err.message?.includes('401')) {
+      throw err;
+    }
+    console.warn('Drive load search failed:', err);
+    return null;
+  }
+
   if (!existingFileId) {
     return null; // No previous backup found
   }
@@ -168,7 +198,9 @@ export async function loadFromGoogleDrive(accessToken: string): Promise<BackupPa
   );
 
   if (!downloadRes.ok) {
-    throw new Error(`Failed to download backup from Google Drive: ${downloadRes.statusText}`);
+    const errObj = await downloadRes.json().catch(() => ({}));
+    const msg = errObj?.error?.message || downloadRes.statusText;
+    throw new Error(`Failed to download backup from Google Drive: ${msg}`);
   }
 
   const backupData: BackupPayload = await downloadRes.json();
